@@ -1,0 +1,31 @@
+{
+  "HALProvider": {
+    "PWM Outputs": {
+      "window": {
+        "visible": true
+      }
+    }
+  },
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/LiveWindow/Flywheel": "Subsystem",
+      "/LiveWindow/SimulatedFlywheel": "Subsystem",
+      "/LiveWindow/Ungrouped/Scheduler": "Scheduler"
+    }
+  },
+  "NetworkTables": {
+    "Shuffleboard": {
+      "Flywheel": {
+        "Flywheel": {
+          "open": true
+        },
+        "Motor": {
+          "open": true
+        },
+        "open": true
+      },
+      "open": true
+    }
+  }
+}
