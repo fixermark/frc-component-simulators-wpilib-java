@@ -3,4 +3,4 @@ Simulations of common controllable subystems in FIRST Robotics using WPILib and 
 
 # Included simulations
 
-* [Flywheel](flywheel/): A single flywheel driven by one motor and an encoder
+* [Flywheel](flywheel-drive/): A single flywheel driven by one motor and an encoder
