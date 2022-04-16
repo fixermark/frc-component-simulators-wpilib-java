@@ -22,6 +22,14 @@ To get started:
 * Once Shuffleboard is launched, return to the Simulation GUI and press the key corresponding to "A" on the controller
   to spin up the flywheel. You'll see the flywheel RPMs in the graph in shuffleboard. ![Shuffleboard graph](img/shuffleboard.png)
 
+## Architectural Details
+
+The program is a command-based TimedRobot program that uses two subsystems: a simple `Flywheel` subsystem that turns the motor on or off, and
+a `SimultedFlywheel` subsystem that is only created (in `simulationInit` in the `Robot` class) if the robot is simulated. Every timing
+step, the `SimulatedFlywheel` runs a simple physics simulation on the motor and flywheel and updates the encoder readings based
+on the results of the simulation. `SimulatedFlywheel` also published the simulation state to the Shuffleboard along with
+a set of parameters that can be tweaked in realtime to change how the flywheel operates. 
+
 ## Disclaimer
 
 The physics simulation is not guaranteed to be accurate. Always test your code on a real robot to
