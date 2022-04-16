@@ -53,16 +53,13 @@ public class SimulatedFlywheel extends SubsystemBase {
         // moment of inertia calculated at http://hyperphysics.phy-astr.gsu.edu/hbase/icyl.html
         // by assuming the SmoothGrip wheel is a perfect 3" radius cylinder of uniform density
         // (not true, but close enough for simulation fun)
-        //
-        // Friction coefficients are for greased steel-on-steel from
-        // https://matmatch.com/learn/property/coefficient-of-friction
         var flywheelCharacteristics = Shuffleboard.getTab("Flywheel").getLayout("Flywheel", BuiltInLayouts.kList)
         .withPosition(2,0)
         .withSize(2,3);
         m_flywheelMassKg = flywheelCharacteristics.add("Mass (kg)", 0.23).getEntry();
         m_flywheelMomentOfInertiaKgMSquared = flywheelCharacteristics.add("Moment of inertia (kg * m^2)", 0.007548372000000001).getEntry();
-        m_flywheelStaticFrictionConstant = flywheelCharacteristics.add("Static friction constant", 0.11).getEntry();
-        m_flywheelDynamicFrictionConstant = flywheelCharacteristics.add("Dynamic friction constant", 0.029).getEntry();
+        m_flywheelStaticFrictionConstant = flywheelCharacteristics.add("Static friction constant", 0.6).getEntry();
+        m_flywheelDynamicFrictionConstant = flywheelCharacteristics.add("Dynamic friction constant", 0.29).getEntry();
         m_motorToFlywheelGearRatio = flywheelCharacteristics.add("Motor-to-flywheel gear ratio", 1.0).getEntry();
 
         m_flywheelSpeedRpm = Shuffleboard.getTab("Flywheel").add("Flywheel speed (RPM)", 1.0)
@@ -84,6 +81,12 @@ public class SimulatedFlywheel extends SubsystemBase {
         var motorVoltage = Math.max(-1.0, Math.min(1.0, m_motor.get())) * RobotController.getBatteryVoltage();
         var motorSpeedRadsS = Units.rotationsPerMinuteToRadiansPerSecond(m_motorSpeedRpm);
         var motorTorque = (motorVoltage - motorSpeedRadsS * k_c) / q;
+
+        // Simulate motor controller operating in "coast mode..." if motor voltage is 0, controller opens the circuit and
+        // so current is 0, leading to no motor torque
+        if (motorVoltage == 0) {
+            motorTorque = 0;
+        }
 
         var gearRatio = m_motorToFlywheelGearRatio.getDouble(1.0);
 
