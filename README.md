@@ -1,4 +1,4 @@
-# frc-component-simulators-wpilib-java
+# FRC component simulators (WPILib / Java)
 Simulations of common controllable subystems in FIRST Robotics using WPILib and Java
 
 # Included simulations
