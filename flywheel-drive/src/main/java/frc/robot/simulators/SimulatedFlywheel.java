@@ -32,7 +32,7 @@ public class SimulatedFlywheel extends SubsystemBase {
     private NetworkTableEntry m_flywheelSpeedRpm;
 
     public SimulatedFlywheel(MotorController motor, EncoderSim encoder) {
-        m_motor = new SimulatedMotor(motor, "Motor", 0,0);
+        m_motor = new SimulatedMotor(motor, Shuffleboard.getTab("Flywheel"), "Motor", 0,0);
         m_encoder = encoder;
 
         // Default values are for an AndyMark SmoothGrip wheel (6" diameter)

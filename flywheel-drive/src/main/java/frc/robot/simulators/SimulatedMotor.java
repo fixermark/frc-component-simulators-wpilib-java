@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class SimulatedMotor extends SubsystemBase {
@@ -16,8 +17,18 @@ public class SimulatedMotor extends SubsystemBase {
 
     double m_motorSpeedRpm = 0;
 
+    /**
+     * Construct simulated motor and its connections to
+     * Shuffleboard 
+     * @param motor The motor controller that controls this motor
+     * @param tab The Shuffleboard tab on which the motor's controls should appear
+     * @param name Name of this motor in the Shuffleboard UI
+     * @param positionX The X position of the motor controller in the Shuffleboard UI
+     * @param positionY The Y position of the motor controller in the Shuffleboard UI
+     */
     SimulatedMotor(
         MotorController motor,
+        ShuffleboardTab tab,
         String name,
         int positionX,
         int positionY
@@ -25,13 +36,17 @@ public class SimulatedMotor extends SubsystemBase {
         m_motor = motor;
         // Default values are for a REV Robotics NEO brushless motor
         // https://www.revrobotics.com/rev-21-1650/
-        var motorCharacteristics = Shuffleboard.getTab("Flywheel").getLayout("Motor", BuiltInLayouts.kList)
+        var motorCharacteristics = tab.getLayout("Motor", BuiltInLayouts.kList)
         .withPosition(positionX, positionY)
         .withSize(2,3);
         m_motorStallTorqueNM = motorCharacteristics.add("Motor stall torque (Newton-meters)", 2.6).getEntry();
         m_motorFreeSpinRPM = motorCharacteristics.add("Motor unloaded free spin (RPM)", 5676.0).getEntry();
     }
 
+    /**
+     * Get torque produced by the motor
+     * @return The torque, in newton-meters
+     */
     public double getMotorTorque() {
         // Motor characteristic caclculations based on https://pages.mtu.edu/~wjendres/ProductRealization1Course/DC_Motor_Calculations.pdf
         
@@ -52,10 +67,20 @@ public class SimulatedMotor extends SubsystemBase {
         return motorTorque;
     }
 
+    /**
+     * Set speed of motor. This is needed for proper back-EMF calculation
+     * 
+     * @param rpm Motor speed, In revolutions per minute
+     */
     public void setMotorSpeedRpm(double rpm) {
         m_motorSpeedRpm = rpm;
     }
 
+    /**
+     * Get the speed of the motor
+     * 
+     * @return Motor speed, in revolutions per minute
+     */
     public double getMotorSpeedRpm() {
         return m_motorSpeedRpm;
     }
