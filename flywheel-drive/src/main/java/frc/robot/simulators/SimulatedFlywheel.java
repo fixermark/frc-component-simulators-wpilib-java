@@ -2,7 +2,6 @@ package frc.robot.simulators;
 
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableEntry;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
@@ -21,11 +20,8 @@ public class SimulatedFlywheel extends SubsystemBase {
 
     private static final double GRAVITATIONAL_ACCELERATION_M_PER_SEC_SQUARED = 9.8;
 
-    private MotorController m_motor;
+    private SimulatedMotor m_motor;
     private EncoderSim m_encoder;
-
-    private NetworkTableEntry m_motorStallTorqueNM;
-    private NetworkTableEntry m_motorFreeSpinRPM;
 
     private NetworkTableEntry m_flywheelMassKg;
     private NetworkTableEntry m_flywheelMomentOfInertiaKgMSquared;
@@ -35,18 +31,9 @@ public class SimulatedFlywheel extends SubsystemBase {
 
     private NetworkTableEntry m_flywheelSpeedRpm;
 
-    private double m_motorSpeedRpm = 0;
-
     public SimulatedFlywheel(MotorController motor, EncoderSim encoder) {
-        m_motor = motor;
+        m_motor = new SimulatedMotor(motor, "Motor", 0,0);
         m_encoder = encoder;
-
-        // Default values are for a REV Robotics NEO brushless motor
-        // https://www.revrobotics.com/rev-21-1650/
-        var motorCharacteristics = Shuffleboard.getTab("Flywheel").getLayout("Motor", BuiltInLayouts.kList)
-        .withSize(2,3);
-        m_motorStallTorqueNM = motorCharacteristics.add("Motor stall torque (Newton-meters)", 2.6).getEntry();
-        m_motorFreeSpinRPM = motorCharacteristics.add("Motor unloaded free spin (RPM)", 5676.0).getEntry();
 
         // Default values are for an AndyMark SmoothGrip wheel (6" diameter)
         // https://www.andymark.com/products/6-in-smoothgrip-wheel-1
@@ -71,41 +58,26 @@ public class SimulatedFlywheel extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Motor characteristic caclculations based on https://pages.mtu.edu/~wjendres/ProductRealization1Course/DC_Motor_Calculations.pdf
-        
-        // Calculate back-EMF constant K_c and Q (resistance / K_m)
-        var k_c = 12.0 / Units.rotationsPerMinuteToRadiansPerSecond(m_motorFreeSpinRPM.getDouble(1.0)); 
-        var q = 12.0 / m_motorStallTorqueNM.getDouble(1.0);
-
-        // Calculate torque applied by motor
-        var motorVoltage = Math.max(-1.0, Math.min(1.0, m_motor.get())) * RobotController.getBatteryVoltage();
-        var motorSpeedRadsS = Units.rotationsPerMinuteToRadiansPerSecond(m_motorSpeedRpm);
-        var motorTorque = (motorVoltage - motorSpeedRadsS * k_c) / q;
-
-        // Simulate motor controller operating in "coast mode..." if motor voltage is 0, controller opens the circuit and
-        // so current is 0, leading to no motor torque
-        if (motorVoltage == 0) {
-            motorTorque = 0;
-        }
+        var motorTorque = m_motor.getMotorTorque();
 
         var gearRatio = m_motorToFlywheelGearRatio.getDouble(1.0);
 
         var advantagedTorque = motorTorque * gearRatio;
 
-        var frictionCoefficient = m_motorSpeedRpm == 0 ? 
+        var frictionCoefficient = m_motor.getMotorSpeedRpm() == 0 ? 
           m_flywheelStaticFrictionConstant.getDouble(1.0) :
           m_flywheelDynamicFrictionConstant.getDouble(1.0);
 
-        var counterTorque = Math.signum(m_motorSpeedRpm) * m_flywheelMassKg.getDouble(1.0) * GRAVITATIONAL_ACCELERATION_M_PER_SEC_SQUARED * frictionCoefficient;
+        var counterTorque = Math.signum(m_motor.getMotorSpeedRpm()) * m_flywheelMassKg.getDouble(1.0) * GRAVITATIONAL_ACCELERATION_M_PER_SEC_SQUARED * frictionCoefficient;
 
         var totalTorque = advantagedTorque - counterTorque;
-        if (m_motorSpeedRpm == 0 && Math.abs(advantagedTorque) < Math.abs(counterTorque)) {
+        if (m_motor.getMotorSpeedRpm() == 0 && Math.abs(advantagedTorque) < Math.abs(counterTorque)) {
             // stalled motor does not overcome static friction
             totalTorque = 0;
         }
 
         var angularAccelerationRadsPerSec = totalTorque / m_flywheelMomentOfInertiaKgMSquared.getDouble(1.0);
-        var flywheelAngularVelocityRps = Units.rotationsPerMinuteToRadiansPerSecond(m_motorSpeedRpm) / gearRatio;
+        var flywheelAngularVelocityRps = Units.rotationsPerMinuteToRadiansPerSecond(m_motor.getMotorSpeedRpm()) / gearRatio;
 
         // Update angular velocity, parceling the change by the delta-T
         var newAngularVelocityRps = flywheelAngularVelocityRps + angularAccelerationRadsPerSec * TIMESTEP_SECS;
@@ -117,7 +89,7 @@ public class SimulatedFlywheel extends SubsystemBase {
             }
         }
 
-        m_motorSpeedRpm = Units.radiansPerSecondToRotationsPerMinute(newAngularVelocityRps * gearRatio);
+        m_motor.setMotorSpeedRpm(Units.radiansPerSecondToRotationsPerMinute(newAngularVelocityRps * gearRatio));
 
         // multiply by timestep and ratio of rotations to radians to get new flywheel position
         var flywheelSpeedRotationsPerSec = newAngularVelocityRps / (2 * Math.PI);
